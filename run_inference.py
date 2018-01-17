@@ -9,15 +9,11 @@ from inference_utils import caption_generator
 from inference_utils import vocabulary
 
 import time
-import graph_freezing
 
 
-input_files = "/Users/rogergirgis/Documents/research_projects/" \
-              "scene_description/im2txt_stuff/danny.jpg"
-checkpoint_path = "/Users/rogergirgis/Documents/research_projects/" \
-                  "scene_description/im2txt_stuff/saved_models/model.ckpt-3000000"
-vocab_file = "/Users/rogergirgis/Documents/research_projects/" \
-             "scene_description/im2txt_stuff/saved_models/word_counts.txt"
+input_files = "/Full/Path/to/ImageFile"
+checkpoint_path = "/Full/Path/to/ckpt"
+vocab_file = "/Full/Path/to/saved_models/word_counts.txt"
 
 FLAGS = tf.flags.FLAGS
 
@@ -75,14 +71,6 @@ def main(_):
         sentence = " ".join(sentence)
         print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
     print(time.time() - start_time)
-
-    # To freeze a graph
-    # print([n.name for n in tf.get_default_graph().as_graph_def().node])
-    frozen_graph = graph_freezing.freeze_session(session=sess,
-                                                 output_names=["softmax",
-                                                               "lstm/initial_state",
-                                                               "lstm/state"])
-    tf.train.write_graph(frozen_graph, ".", "model.pb", as_text=False)
 
 
 if __name__ == "__main__":
