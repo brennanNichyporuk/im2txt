@@ -11,9 +11,9 @@ from inference_utils import vocabulary
 import time
 
 
-input_files = "/Full/Path/to/ImageFile"
-checkpoint_path = "/Full/Path/to/ckpt"
-vocab_file = "/Full/Path/to/saved_models/word_counts.txt"
+input_files = "/full/path/to/imageFile"
+checkpoint_path = "saved_models/model.ckpt-3000000"
+vocab_file = "saved_models/word_counts.txt"
 
 FLAGS = tf.flags.FLAGS
 
