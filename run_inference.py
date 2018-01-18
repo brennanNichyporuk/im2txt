@@ -34,51 +34,55 @@ tf.flags.DEFINE_string("input_files",
 
 
 def main(_):
-  # Build the inference graph.
-  start_time = time.time()
-  g = tf.Graph()
-  with g.as_default():
-    model = inference_wrapper.InferenceWrapper()
-    restore_fn = model.build_graph_from_config(configuration.ModelConfig(),
-                                               FLAGS.checkpoint_path)
-  g.finalize()
+    # Build the inference graph.
+    g = tf.Graph()
+    with g.as_default():
+        model = inference_wrapper.InferenceWrapper()
+        restore_fn = model.build_graph_from_config(configuration.ModelConfig(),
+                                                   FLAGS.checkpoint_path)
+    g.finalize()
 
-  # Create the vocabulary.
-  vocab = vocabulary.Vocabulary(FLAGS.vocab_file)
+    # Create the vocabulary.
+    vocab = vocabulary.Vocabulary(FLAGS.vocab_file)
 
-  filenames = []
-  for file_pattern in FLAGS.input_files.split(","):
-    filenames.extend(tf.gfile.Glob(file_pattern))
-  tf.logging.info("Running caption generation on %d files matching %s",
+    filenames = []
+    for file_pattern in FLAGS.input_files.split(","):
+        filenames.extend(tf.gfile.Glob(file_pattern))
+
+    tf.logging.info("Running caption generation on %d files matching %s",
                   len(filenames), FLAGS.input_files)
 
-  with tf.Session(graph=g) as sess:
-    # Load the model from checkpoint.
-    restore_fn(sess)
+    with tf.Session(graph=g) as sess:
+        # Load the model from checkpoint.
+        restore_fn(sess)
 
-    # Prepare the caption generator. Here we are implicitly using the default
-    # beam search parameters. See caption_generator.py for a description of the
-    # available beam search parameters.
-    generator = caption_generator.CaptionGenerator(model, vocab)
+        # Prepare the caption generator. Here we are implicitly using the default
+        # beam search parameters. See caption_generator.py for a description of the
+        # available beam search parameters.
+        generator = caption_generator.CaptionGenerator(model, vocab)
 
-    for filename in filenames:
-      with tf.gfile.GFile(filename, "r") as f:
-        image = f.read()
-      captions = generator.beam_search(sess, image)
-      print("Captions for image %s:" % os.path.basename(filename))
-      for i, caption in enumerate(captions):
-        # Ignore begin and end words.
-        sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
-        sentence = " ".join(sentence)
-        print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
-    print(time.time() - start_time)
+        for filename in filenames:
+            start_time = time.time()
+            with tf.gfile.GFile(filename, "r") as f:
+                image = f.read()
 
-    # To freeze a graph
-    frozen_graph = graph_freezing.freeze_session(session=sess,
-                                                 output_names=["softmax",
-                                                               "lstm/initial_state",
-                                                               "lstm/state"])
-    tf.train.write_graph(frozen_graph, "saved_models/", "model.pb", as_text=False)
+            captions = generator.beam_search(sess, image)
+            print("Captions for image %s:" % os.path.basename(filename))
+
+            for i, caption in enumerate(captions):
+                # Ignore begin and end words.
+                sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
+                sentence = " ".join(sentence)
+                print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
+
+            print("Inference Time: %f" % (time.time() - start_time))
+
+        # To freeze a graph - Uncomment the following 5 lines to create the corresponding pb file.
+        # frozen_graph = graph_freezing.freeze_session(session=sess,
+        #                                              output_names=["softmax",
+        #                                                            "lstm/initial_state",
+        #                                                            "lstm/state"])
+        # tf.train.write_graph(frozen_graph, "saved_models/", "model.pb", as_text=False)
 
 if __name__ == "__main__":
-  tf.app.run()
+    tf.app.run()

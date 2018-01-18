@@ -7,22 +7,22 @@ from inference_utils import vocabulary
 from inference_utils import utils
 
 
-FLAGS = tf.flags.FLAGS
+input_files = "/full/path/to/ImageFile"
 vocab_file = "saved_models/word_counts.txt"
+pb_file = "saved_models/model.pb"
+
+FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string("vocab_file",
                        vocab_file,
                        "Text file containing the vocabulary.")
 
-input_files = "/full/path/to/ImageFile"
 tf.flags.DEFINE_string("input_files",
                        input_files,
                        "File pattern or comma-separated list of file patterns "
                        "of image files.")
 
-pb_file = "saved_models/model.pb"
 vocab = vocabulary.Vocabulary(FLAGS.vocab_file)
 
-start_time = time.time()
 # Reference: https://github.com/MarvinTeichmann/KittiSeg/issues/113
 with tf.Graph().as_default() as graph:  # Set default graph as graph
 
@@ -49,21 +49,23 @@ with tf.Graph().as_default() as graph:  # Set default graph as graph
                     producer_op_list=None
                     )
 
+            # initialize_all_variables
+            tf.global_variables_initializer()
+
             filenames = []
             for file_pattern in FLAGS.input_files.split(","):
                 filenames.extend(tf.gfile.Glob(file_pattern))
 
-            with tf.gfile.GFile(filenames[0], "r") as f:
-                image = f.read()
+            for filename in filenames:
+                start_time = time.time()
+                with tf.gfile.GFile(filename, "r") as f:
+                    image = f.read()
 
-            #initialize_all_variables
-            tf.global_variables_initializer()
+                captions = utils.beam_search(sess, image, vocab)
+                for i, caption in enumerate(captions):
+                    # Ignore begin and end words.
+                    sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
+                    sentence = " ".join(sentence)
+                    print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
 
-            captions = utils.beam_search(sess, image, vocab)
-            for i, caption in enumerate(captions):
-                # Ignore begin and end words.
-                sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
-                sentence = " ".join(sentence)
-                print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
-
-print(time.time() - start_time)
+                print("Inference Time: %f" % (time.time() - start_time))
