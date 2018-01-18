@@ -9,9 +9,10 @@ from inference_utils import caption_generator
 from inference_utils import vocabulary
 
 import time
+import graph_freezing
 
 
-input_files = "/full/path/to/imageFile"
+input_files = "/full/path/to/ImageFile"
 checkpoint_path = "saved_models/model.ckpt-3000000"
 vocab_file = "saved_models/word_counts.txt"
 
@@ -72,6 +73,12 @@ def main(_):
         print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
     print(time.time() - start_time)
 
+    # To freeze a graph
+    frozen_graph = graph_freezing.freeze_session(session=sess,
+                                                 output_names=["softmax",
+                                                               "lstm/initial_state",
+                                                               "lstm/state"])
+    tf.train.write_graph(frozen_graph, "saved_models/", "model.pb", as_text=False)
 
 if __name__ == "__main__":
   tf.app.run()
