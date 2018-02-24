@@ -2,14 +2,14 @@ import tensorflow as tf  # Default graph is initialized when the library is impo
 from tensorflow.python.platform import gfile
 import time
 import math
+import os,sys
 
 from inference_utils import vocabulary
 from inference_utils import utils
 
-
-input_files = "/full/path/to/ImageFile"
-vocab_file = "saved_models/word_counts.txt"
-pb_file = "saved_models/model.pb"
+input_files = sys.argv[1]
+vocab_file = "/home/srl/ECSE456/models/im2txt/saved_models/word_counts.txt"
+pb_file = "/home/srl/ECSE456/models/im2txt/saved_models/model.pb"
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string("vocab_file",
@@ -58,14 +58,13 @@ with tf.Graph().as_default() as graph:  # Set default graph as graph
 
             for filename in filenames:
                 start_time = time.time()
-                with tf.gfile.GFile(filename, "r") as f:
+                with tf.gfile.GFile(filename, "rb") as f:
                     image = f.read()
 
                 captions = utils.beam_search(sess, image, vocab)
-                for i, caption in enumerate(captions):
-                    # Ignore begin and end words.
-                    sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
-                    sentence = " ".join(sentence)
-                    print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
+                
+		caption = captions[0]
+                sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
+                sentence = " ".join(sentence)
+                print("|XYZ|%s|XYZ|" % sentence)
 
-                print("Inference Time: %f" % (time.time() - start_time))

@@ -90,6 +90,15 @@ class Caption(object):
           return -1
       else:
           return 1
+  
+  def __lt__(self, other):
+      assert isinstance(other, Caption)
+      return self.score < other.score
+   
+  # Also for Python 3 compatibility.
+  def __eq__(self, other):
+      assert isinstance(other, Caption)
+      return self.score == other.score 
 
 
 def beam_search(sess, encoded_image, vocab):
