@@ -60,11 +60,19 @@ with tf.Graph().as_default() as graph:  # Set default graph as graph
                 start_time = time.time()
                 with tf.gfile.GFile(filename, "rb") as f:
                     image = f.read()
-
-                captions = utils.beam_search(sess, image, vocab)
                 
-		caption = captions[0]
-                sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
+                #captions = utils.beam_search(sess, image, vocab)
+                #for i, caption in enumerate(captions):
+                #    # Ignore begin and end words.
+                #    sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
+                #    sentence = " ".join(sentence)
+                #    print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
+                
+                captions = utils.beam_search(sess, image, vocab)
+                sentence = [vocab.id_to_word(w) for w in captions[0].sentence[1:-1]]
                 sentence = " ".join(sentence)
                 print("|XYZ|%s|XYZ|" % sentence)
+                print("|XP1|%f|XP1|" % math.exp(captions[0].logprob))
+                print("|XP2|%f|XP2|" % math.exp(captions[1].logprob))
+                print("|XP3|%f|XP3|" % math.exp(captions[2].logprob))
 
